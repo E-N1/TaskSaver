@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 import subprocess
 import json
 import os
@@ -116,7 +116,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     manager = TaskManager()
     manager.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == '__main__':
     main()
