@@ -1,10 +1,12 @@
 from PyQt6 import QtWidgets
 import subprocess
-import json
-import os
-import sys
+import winreg
 import ctypes
 import psutil
+import json
+import sys
+import os
+
 
 def is_window_visible(window_handle):
     return ctypes.windll.user32.IsWindowVisible(window_handle)
@@ -31,9 +33,9 @@ def get_open_applications():
     return app_tasks
 
 class TaskManager(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, cwd):
         super().__init__()
-
+        self.cwd = cwd
         self.initUI()
         self.setWindowTitle("Task Manager")
         self.setGeometry(200, 200, 300, 100)
@@ -60,6 +62,9 @@ class TaskManager(QtWidgets.QWidget):
         self.open_button.clicked.connect(self.load_task)
         self.layout.addWidget(self.open_button)
 
+        self.autostart_button = QtWidgets.QPushButton("Add to Autostart")
+        self.autostart_button.clicked.connect(self.add_to_autostart)
+        self.layout.addWidget(self.autostart_button)
         self.setLayout(self.layout)
 
     def save_task(self):
@@ -111,12 +116,32 @@ class TaskManager(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.information(self, "Tasks Loaded", f"Tasks have been opened.\n{', '.join(tasks_to_open)}")
             else:
                 QtWidgets.QMessageBox.critical(self, "Error", "Task not found.")
+                
+    def add_to_autostart(self):
+            try:
+                batch_file_path = os.path.join(self.cwd, 'tasksaver_autostart.bat')
 
-def main():
+                # Get the path to the Startup folder
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
+                startup_folder = winreg.QueryValueEx(key, "Startup")[0]
+                winreg.CloseKey(key)
+
+                # Create a shortcut to the batch file in the Startup folder
+                shortcut_path = os.path.join(startup_folder, "TaskSaver.lnk")
+                with open(shortcut_path, 'w') as shortcut:
+                    shortcut.write(f'@echo off\n')
+                    shortcut.write(f'start "" "{batch_file_path}"\n')
+
+                QtWidgets.QMessageBox.information(self, "Success", "Task Manager has been added to autostart.")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"Error adding to autostart: {e}")
+
+def main(cwd):
     app = QtWidgets.QApplication(sys.argv)
-    manager = TaskManager()
+    manager = TaskManager(cwd)
     manager.show()
     sys.exit(app.exec())
 
 if __name__ == '__main__':
-    main()
+    cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
+    main(cwd)
