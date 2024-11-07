@@ -1,3 +1,4 @@
+from win32com.client import Dispatch
 from PyQt6 import QtWidgets
 import subprocess
 import winreg
@@ -6,7 +7,6 @@ import psutil
 import json
 import sys
 import os
-
 
 def is_window_visible(window_handle):
     return ctypes.windll.user32.IsWindowVisible(window_handle)
@@ -116,26 +116,25 @@ class TaskManager(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.information(self, "Tasks Loaded", f"Tasks have been opened.\n{', '.join(tasks_to_open)}")
             else:
                 QtWidgets.QMessageBox.critical(self, "Error", "Task not found.")
-                
     def add_to_autostart(self):
-            try:
-                batch_file_path = os.path.join(self.cwd, 'tasksaver_autostart.bat')
+        try:
+            # Get the path to the Startup folder
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
+            startup_folder = winreg.QueryValueEx(key, "Startup")[0]
+            winreg.CloseKey(key)
 
-                # Get the path to the Startup folder
-                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
-                startup_folder = winreg.QueryValueEx(key, "Startup")[0]
-                winreg.CloseKey(key)
+            # Create a proper Windows shortcut
+            shortcut_path = os.path.join(startup_folder, "TaskSaver.lnk")
+            shell = Dispatch('WScript.Shell')
+            shortcut = shell.CreateShortCut(shortcut_path)
+            shortcut.Targetpath = sys.executable
+            shortcut.Arguments = f'"{__file__}"'
+            shortcut.WorkingDirectory = os.path.dirname(__file__)
+            shortcut.save()
 
-                # Create a shortcut to the batch file in the Startup folder
-                shortcut_path = os.path.join(startup_folder, "TaskSaver.lnk")
-                with open(shortcut_path, 'w') as shortcut:
-                    shortcut.write(f'@echo off\n')
-                    shortcut.write(f'start "" "{batch_file_path}"\n')
-
-                QtWidgets.QMessageBox.information(self, "Success", "Task Manager has been added to autostart.")
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(self, "Error", f"Error adding to autostart: {e}")
-
+            QtWidgets.QMessageBox.information(self, "Success", "Task Manager has been added to autostart.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Error adding to autostart: {e}")
 def main(cwd):
     app = QtWidgets.QApplication(sys.argv)
     manager = TaskManager(cwd)
