@@ -2,15 +2,19 @@
 
 TaskSaver is a desktop application that allows you to save and reopen currently active applications. It utilizes `PyQt5` for the graphical user interface and `psutil` to gather process information.
 
+
+## Requirements:
+Install the dependencies listed in requirements.txt by running
+
+```
+pip install -r requirements.txt
+```
+
 ## Features
 
 - **Save Active Applications**: Save the currently open applications with visible windows.
 - **Reopen Applications**: Launch saved applications if they are not already open.
 
-## Prerequisites
-
-- Python 3.6 or higher
-- Windows operating system (as it uses Windows-specific libraries)
 
 ## Recommended Setup
 
